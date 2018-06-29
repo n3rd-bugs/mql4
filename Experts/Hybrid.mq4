@@ -3,36 +3,50 @@
 //|                                     Copyright 2018, Usama Masood |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2018, Usama Masood"
-#property link      "https://github.com/n3rd-bugs/mql4"
-#property version   "1.0"
+#property copyright                     "Copyright 2018, Usama Masood"
+#property link                          "https://github.com/n3rd-bugs/mql4"
+#property version                       "1.0"
 #property strict
 
 /* Definitions. */
-#define NUM_INTERVALS               9
-#define MAGIC                       0x145211
+#define NUM_INTERVALS                   9
+#define MAGIC                           0x145211
 
 /* Bollinger band definitions. */
-#define BB_VALUES                   3
-#define BB_UPPER(intv)              (bb[(intv * BB_VALUES)])
-#define BB_MAIN(intv)               (bb[(intv * BB_VALUES) + 1])
-#define BB_LOWER(intv)              (bb[(intv * BB_VALUES) + 2])
-#define BB_UPPER_CALC(intv, shift)  (iBands(NULL, inervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, PRICE_CLOSE, MODE_UPPER, shift))
-#define BB_MAIN_CALC(intv, shift)   (iBands(NULL, inervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, PRICE_CLOSE, MODE_MAIN, shift))
-#define BB_LOWER_CALC(intv, shift)  (iBands(NULL, inervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, PRICE_CLOSE, MODE_LOWER, shift))
+#define BB_VALUES                       3
+#define BB_UPPER(intv)                  (bb[(intv * BB_VALUES)])
+#define BB_MAIN(intv)                   (bb[(intv * BB_VALUES) + 1])
+#define BB_LOWER(intv)                  (bb[(intv * BB_VALUES) + 2])
+#define BB_UPPER_CALC(intv, shift)      (iBands(NULL, inervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, PRICE_OPEN, MODE_UPPER, shift))
+#define BB_MAIN_CALC(intv, shift)       (iBands(NULL, inervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, PRICE_OPEN, MODE_MAIN, shift))
+#define BB_LOWER_CALC(intv, shift)      (iBands(NULL, inervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, PRICE_OPEN, MODE_LOWER, shift))
 
 /* Stochastic definitions. */
-#define ST_VALUES                   3
-#define ST_MAIN(intv)               (st[(intv * ST_VALUES)])
-#define ST_SIGNAL(intv)             (st[(intv * ST_VALUES) + 1])
-#define ST_DIR(intv)                (st[(intv * ST_VALUES) + 2])
-#define ST_MAIN_CALC(intv, shift)   (iStochastic(NULL, inervals[intv], ST_K, ST_D, ST_S, MODE_SMA, 0, MODE_MAIN, shift))
-#define ST_SIGNAL_CALC(intv, shift) (iStochastic(NULL, inervals[intv], ST_K, ST_D, ST_S, MODE_SMA, 0, MODE_SIGNAL, shift))
+#define ST_VALUES                       3
+#define ST_MAIN(intv)                   (st[(intv * ST_VALUES)])
+#define ST_SIGNAL(intv)                 (st[(intv * ST_VALUES) + 1])
+#define ST_DIR(intv)                    (st[(intv * ST_VALUES) + 2])
+#define ST_MAIN_CALC(intv, shift)       (iStochastic(NULL, inervals[intv], ST_K, ST_D, ST_S, MODE_EMA, 0, MODE_MAIN, shift))
+#define ST_SIGNAL_CALC(intv, shift)     (iStochastic(NULL, inervals[intv], ST_K, ST_D, ST_S, MODE_EMA, 0, MODE_SIGNAL, shift))
 
 /* RSI definitions. */
-#define RSI_VALUES                  1
-#define RSI(intv)                   (rsi[(intv * RSI_VALUES)])
-#define RSI_CALC(intv, shift)       (iRSI(NULL, inervals[intv], RSI_PERIOD, PRICE_CLOSE, shift))
+#define RSI_VALUES                      2
+#define RSI(intv)                       (rsi[(intv * RSI_VALUES)])
+#define RSI_DIR(intv)                   (rsi[(intv * RSI_VALUES) + 1])
+#define RSI_CALC(intv, shift)           (iRSI(NULL, inervals[intv], RSI_PERIOD, PRICE_MEDIAN, shift))
+
+/* MACD definitions. */
+#define MACD_VALUES                     2
+#define MACD(intv)                      (macd[(intv * RSI_VALUES)])
+#define MACD_DIR(intv)                  (macd[(intv * RSI_VALUES) + 1])
+#define MACD_MAIN_CALC(intv, shift)     (iMACD(NULL, inervals[intv], MACD_FEMA, MACD_SEMA, MACD_SMA, PRICE_OPEN, MODE_MAIN, shift))
+#define MACD_SIGNAL_CALC(intv, shift)   (iMACD(NULL, inervals[intv], MACD_FEMA, MACD_SEMA, MACD_SMA, PRICE_OPEN, MODE_SIGNAL, shift))
+
+/* MA definitions. */
+#define MA_VALUES                       2
+#define MA(intv)                        (ma[(intv * RSI_VALUES)])
+#define MA_DIR(intv)                    (ma[(intv * RSI_VALUES) + 1])
+#define MA_CALC(intv, shift)            (iMA(NULL, inervals[intv], MA_PERIOD, MA_SHIFT, MODE_EMA, PRICE_OPEN, shift))
 
 /* RSI ST definitions. */
 #define RSI_ST_CALC(intv, shift)    (RSI_CALC(intv, shift) * ST_MAIN_CALC(intv, shift))
@@ -79,13 +93,14 @@ string inervalStrings[NUM_INTERVALS] =
 };
 
 /* Input configurations. */
-input double            LOT_SIZE        = 0.1;
+input double            LOT_SIZE        = 0.01;
 input double            TAKE_PROFIT     = 0;
-input double            TRAIL_STOP      = 100;
+input double            TRAIL_STOP      = 200;
 input INTERVAL_INDEX    BASE_INTERVAL   = M30;
-input int               BB_PERIOD       = 10;
+input int               BB_PERIOD       = 20;
 input int               BB_DEVIATION    = 2;
 input int               BB_SHIFT        = 0;
+input double            MACD_BAND       = 0.05;
 input int               ST_K            = 5;
 input int               ST_D            = 3;
 input int               ST_S            = 3;
@@ -94,11 +109,19 @@ input int               ST_DOWN         = 20;
 input int               RSI_PERIOD      = 14;
 input int               RSI_UP          = 70;
 input int               RSI_DOWN        = 30;
+input int               MACD_FEMA       = 12;
+input int               MACD_SEMA       = 26;
+input int               MACD_SMA        = 9;
+input int               MA_PERIOD       = 14;
+input int               MA_SHIFT        = 1;
+input double            MA_DIFF         = 0.2;
 
 /* Shared/global variable definitions. */
 double bb[];
 double st[];
 double rsi[];
+double macd[];
+double ma[];
 string comment;
 
 /**
@@ -282,6 +305,11 @@ void OnTick()
  */
 int testLong()
 {   
+    if (MA_DIR(BASE_INTERVAL) > MA_DIFF)
+    {
+        return (1);
+    }
+    
     return (0);
 }
 
@@ -290,6 +318,11 @@ int testLong()
  */
 int doCloseLong()
 {
+    if (MA_DIR(BASE_INTERVAL) < MA_DIFF)
+    {
+        return (1);
+    }
+    
     return (0);
 }
 
@@ -298,6 +331,11 @@ int doCloseLong()
  */
 int testShort()
 {
+    if (MA_DIR(BASE_INTERVAL) < MA_DIFF)
+    {
+        return (1);
+    }
+    
     return (0);
 }
 
@@ -306,6 +344,11 @@ int testShort()
  */
 int doCloseShort()
 {
+    if (MA_DIR(BASE_INTERVAL) > MA_DIFF)
+    {
+        return (1);
+    }
+    
     return (0);
 }
 /**
@@ -317,6 +360,8 @@ void initializeIndicators()
     ArrayResize(bb, NUM_INTERVALS * BB_VALUES);
     ArrayResize(st, NUM_INTERVALS * ST_VALUES);
     ArrayResize(rsi, NUM_INTERVALS * RSI_VALUES);
+    ArrayResize(macd, NUM_INTERVALS * MACD_VALUES);
+    ArrayResize(ma, NUM_INTERVALS * MA_VALUES);
 }
 
 /**
@@ -339,6 +384,15 @@ void readIndicators()
         
         /* Gather RSI data. */
         RSI(i)          = RSI_CALC(i, 0);
+        RSI_DIR(i)      = (RSI_CALC(i, 0) > RSI_CALC(i, 1));
+        
+        /* Gather MACD data. */
+        MACD(i)         = MACD_MAIN_CALC(i, 0);
+        MACD_DIR(i)     = (MACD_MAIN_CALC(i, 0) > MACD_MAIN_CALC(i, 1));
+        
+        /* Gather MA data. */
+        MA(i)           = MA_CALC(i, 0);
+        MA_DIR(i)       = (MA_CALC(i, 0) - MA_CALC(i, 1));
    }
 }
 
