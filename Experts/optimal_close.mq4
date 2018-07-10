@@ -14,7 +14,7 @@
 
 /* Test definitions. */
 #define DO_BUY                          0//StrToTime("2018.6.29 05:00")
-#define DO_SELL                         StrToTime("2018.07.05 10:15")
+#define DO_SELL                         StrToTime("2018.07.10 08:15")
 #define TEST_LOT_SIZE                   0.01
 
 int     testOrderOpened                 = false;
@@ -61,7 +61,7 @@ string inervalStrings[NUM_INTERVALS] =
 };
 
 /* Input configurations. */
-input double                TRAIL_STOP          = 220;
+input double                TRAIL_STOP          = 300;
 input INTERVAL_INDEX        BASE_INTERVAL       = M15;
 
 /* BB configurations. */
@@ -77,6 +77,8 @@ input int                   ST_UP               = 80;
 input int                   ST_DOWN             = 20;
 input ENUM_MA_METHOD        ST_METHOD           = MODE_SMA;
 input int                   ST_APPLIED_PRICE    = 1;
+
+input ENUM_MA_METHOD        MA_METHOD           = MODE_LWMA;
 
 /* Bollinger band definitions. */
 #define BB_VALUES                       3
@@ -94,6 +96,10 @@ input int                   ST_APPLIED_PRICE    = 1;
 #define ST_DIR(intv)                    (st[(intv * ST_VALUES) + 2])
 #define ST_MAIN_CALC(intv, shift)       (iStochastic(NULL, inervals[intv], ST_K, ST_D, ST_S, ST_METHOD, ST_APPLIED_PRICE, MODE_MAIN, shift))
 #define ST_SIGNAL_CALC(intv, shift)     (iStochastic(NULL, inervals[intv], ST_K, ST_D, ST_S, ST_METHOD, ST_APPLIED_PRICE, MODE_SIGNAL, shift))
+
+/* MA definitions. */
+#define MA21_CALC(intv, shift)          (iMA(NULL, inervals[intv], 21, 0, MA_METHOD, PRICE_CLOSE, shift))
+#define MA7_CALC(intv, shift)           (iMA(NULL, inervals[intv], 7, 0, MA_METHOD, PRICE_CLOSE, shift))
 
 /* Shared/global variable definitions. */
 double bb[];
@@ -167,8 +173,7 @@ void OnTick()
         /* Select the first order and verify if is the the right symbol and type. */
         if (!OrderSelect(cnt, SELECT_BY_POS, MODE_TRADES) || 
             (OrderSymbol() != Symbol()) ||
-            ((OrderType() != OP_SELL) && (OrderType() != OP_BUY)) ||
-            (OrderMagicNumber() != MAGIC))
+            ((OrderType() != OP_SELL) && (OrderType() != OP_BUY)))
         {
             /* Move to next order. */
             continue;
@@ -192,10 +197,10 @@ void OnTick()
             if (TRAIL_STOP > 0)
             {
                 /* If stop loss can be updated. */
-                if (OrderStopLoss() < (Bid - TRAIL_STOP))
+                if ((OrderStopLoss() < (Bid - (TRAIL_STOP * Point))) || (OrderStopLoss() == 0))
                 {
                     /* Update trail stop. */
-                    if (!OrderModify(OrderTicket(), OrderOpenPrice(), Bid - TRAIL_STOP, OrderTakeProfit(), 0, Green))
+                    if (!OrderModify(OrderTicket(), OrderOpenPrice(), Bid - (TRAIL_STOP * Point), OrderTakeProfit(), 0, Green))
                     {
                         Print("OrderModify error ",GetLastError());
                     }
@@ -221,10 +226,10 @@ void OnTick()
             if (TRAIL_STOP > 0)
             {
                 /* If stop loss can be updated. */
-                if (OrderStopLoss() > (Ask + TRAIL_STOP))
+                if ((OrderStopLoss() > (Ask + (TRAIL_STOP * Point))) || (OrderStopLoss() == 0))
                 {
                     /* Update trail stop. */
-                    if (!OrderModify(OrderTicket(), OrderOpenPrice(), Ask + TRAIL_STOP, OrderTakeProfit(), 0, Red))
+                    if (!OrderModify(OrderTicket(), OrderOpenPrice(), Ask + (TRAIL_STOP * Point), OrderTakeProfit(), 0, Red))
                     {
                         Print("OrderModify error ",GetLastError());
                     }
@@ -242,7 +247,7 @@ void OnTick()
  */
 int doCloseLong()
 {
-    if (Ask <= BB_MAIN(BASE_INTERVAL))
+    if ((MA21_CALC(BASE_INTERVAL, 0) >= MA7_CALC(BASE_INTERVAL, 0)))
     {
         return (1);
     }
@@ -255,7 +260,7 @@ int doCloseLong()
  */
 int doCloseShort()
 {
-    if (Bid >= BB_MAIN(BASE_INTERVAL))
+    if ((MA21_CALC(BASE_INTERVAL, 0) <= MA7_CALC(BASE_INTERVAL, 0)))
     {
         return (1);
     }
