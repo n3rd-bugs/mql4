@@ -14,7 +14,7 @@
 
 /* Test definitions. */
 #define DO_BUY                          0//StrToTime("2018.6.29 05:00")
-#define DO_SELL                         StrToTime("2018.07.10 08:15")
+#define DO_SELL                         0//StrToTime("2018.07.10 08:15")
 #define TEST_LOT_SIZE                   0.01
 
 int     testOrderOpened                 = false;
@@ -61,7 +61,7 @@ string inervalStrings[NUM_INTERVALS] =
 };
 
 /* Input configurations. */
-input double                TRAIL_STOP          = 300;
+input double                TRAIL_STOP          = 100;
 input INTERVAL_INDEX        BASE_INTERVAL       = M15;
 
 /* BB configurations. */
@@ -197,10 +197,10 @@ void OnTick()
             if (TRAIL_STOP > 0)
             {
                 /* If stop loss can be updated. */
-                if ((OrderStopLoss() < (Bid - (TRAIL_STOP * Point))) || (OrderStopLoss() == 0))
+                if ((OrderStopLoss() < (MA7_CALC(BASE_INTERVAL, 0) - (TRAIL_STOP * Point))) || (OrderStopLoss() == 0))
                 {
                     /* Update trail stop. */
-                    if (!OrderModify(OrderTicket(), OrderOpenPrice(), Bid - (TRAIL_STOP * Point), OrderTakeProfit(), 0, Green))
+                    if (!OrderModify(OrderTicket(), OrderOpenPrice(), MA7_CALC(BASE_INTERVAL, 0) - (TRAIL_STOP * Point), OrderTakeProfit(), 0, Green))
                     {
                         Print("OrderModify error ",GetLastError());
                     }
@@ -226,10 +226,10 @@ void OnTick()
             if (TRAIL_STOP > 0)
             {
                 /* If stop loss can be updated. */
-                if ((OrderStopLoss() > (Ask + (TRAIL_STOP * Point))) || (OrderStopLoss() == 0))
+                if ((OrderStopLoss() > ((MA7_CALC(BASE_INTERVAL, 0) + (Ask - Bid)) + (TRAIL_STOP * Point))) || (OrderStopLoss() == 0))
                 {
                     /* Update trail stop. */
-                    if (!OrderModify(OrderTicket(), OrderOpenPrice(), Ask + (TRAIL_STOP * Point), OrderTakeProfit(), 0, Red))
+                    if (!OrderModify(OrderTicket(), OrderOpenPrice(), (MA7_CALC(BASE_INTERVAL, 0) + (Ask - Bid)) + (TRAIL_STOP * Point), OrderTakeProfit(), 0, Red))
                     {
                         Print("OrderModify error ",GetLastError());
                     }
