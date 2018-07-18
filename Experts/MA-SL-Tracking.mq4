@@ -62,7 +62,7 @@ string inervalStrings[NUM_INTERVALS] =
 
 /* Input configurations. */
 input double                TRAIL_STOP          = 250;
-input INTERVAL_INDEX        BASE_INTERVAL       = M15;
+input INTERVAL_INDEX        BASE_INTERVAL       = M30;
 
 /* BB configurations. */
 input int                   BB_PERIOD           = 20;
