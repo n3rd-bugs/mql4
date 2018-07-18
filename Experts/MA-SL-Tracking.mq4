@@ -13,7 +13,7 @@
 #define MAGIC                           0x145211
 
 /* Test definitions. */
-#define DO_BUY                          StrToTime("2018.07.16 18:45")
+#define DO_BUY                          0//StrToTime("2018.07.16 18:45")
 #define DO_SELL                         0//StrToTime("2018.07.16 18:45")
 #define TEST_LOT_SIZE                   0.01
 
@@ -61,7 +61,7 @@ string inervalStrings[NUM_INTERVALS] =
 };
 
 /* Input configurations. */
-input double                TRAIL_STOP          = 200;
+input double                TRAIL_STOP          = 250;
 input INTERVAL_INDEX        BASE_INTERVAL       = M15;
 
 /* BB configurations. */
@@ -79,6 +79,7 @@ input ENUM_MA_METHOD        ST_METHOD           = MODE_SMA;
 input int                   ST_APPLIED_PRICE    = 1;
 
 input ENUM_MA_METHOD        MA_METHOD           = MODE_EMA;
+input ENUM_APPLIED_PRICE    MA_PRICE            = PRICE_CLOSE;
 
 /* Bollinger band definitions. */
 #define BB_VALUES                       3
@@ -98,8 +99,8 @@ input ENUM_MA_METHOD        MA_METHOD           = MODE_EMA;
 #define ST_SIGNAL_CALC(intv, shift)     (iStochastic(NULL, inervals[intv], ST_K, ST_D, ST_S, ST_METHOD, ST_APPLIED_PRICE, MODE_SIGNAL, shift))
 
 /* MA definitions. */
-#define MA21_CALC(intv, shift)          (iMA(NULL, inervals[intv], 21, 0, MA_METHOD, PRICE_OPEN, shift))
-#define MA7_CALC(intv, shift)           (iMA(NULL, inervals[intv], 7, 0, MA_METHOD, PRICE_OPEN, shift))
+#define MA21_CALC(intv, shift)          (iMA(NULL, inervals[intv], 21, 0, MA_METHOD, MA_PRICE, shift))
+#define MA7_CALC(intv, shift)           (iMA(NULL, inervals[intv], 7, 0, MA_METHOD, MA_PRICE, shift))
 
 /* Shared/global variable definitions. */
 double bb[];
@@ -216,7 +217,7 @@ void OnTick()
             if (Ask < MA21_CALC(BASE_INTERVAL, 0))
             {
                 /* Calculate trail stop from the MA21. */
-                trailStop = MA21_CALC(BASE_INTERVAL, 0);
+                trailStop = MA21_CALC(BASE_INTERVAL, 0) + (Ask - Bid);
             }
             else
             {
