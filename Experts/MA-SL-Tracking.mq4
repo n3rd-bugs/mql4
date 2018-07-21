@@ -13,8 +13,8 @@
 #define MAGIC                           0x145211
 
 /* Test definitions. */
-#define DO_BUY                          0//StrToTime("2018.07.16 18:45")
-#define DO_SELL                         0//StrToTime("2018.07.16 18:45")
+#define DO_BUY                          StrToTime("2018.07.20 07:00")
+#define DO_SELL                         0//StrToTime("2018.07.18 11:00")
 #define TEST_LOT_SIZE                   0.01
 
 int     testOrderOpened                 = false;
@@ -63,6 +63,7 @@ string inervalStrings[NUM_INTERVALS] =
 /* Input configurations. */
 input double                TRAIL_STOP          = 250;
 input INTERVAL_INDEX        BASE_INTERVAL       = M30;
+input bool                  STRICT_SL_MA        = false;
 
 /* BB configurations. */
 input int                   BB_PERIOD           = 20;
@@ -145,6 +146,7 @@ void OnTick()
 {
     int total;
     double trailStop;
+    int isMAActive = false;
     
     /* Verify that we have enoght data on the chart. */
     if (Bars < 100)
@@ -186,10 +188,11 @@ void OnTick()
         {
             
             /* If Bid price is greater than the MA21. */
-            if (Bid > MA21_CALC(BASE_INTERVAL, 0))
+            if ((Bid - ((STRICT_SL_MA == true) ? 0 : (TRAIL_STOP * Point))) > MA21_CALC(BASE_INTERVAL, 0))
             {
                 /* Calculate trail stop from the MA21. */
                 trailStop = MA21_CALC(BASE_INTERVAL, 0);
+                isMAActive = true;
             }
             else
             {
@@ -200,7 +203,7 @@ void OnTick()
             /* If stop loss can be updated. */
             if ((OrderStopLoss() < trailStop) || (OrderStopLoss() == 0))
             {
-                Print("Updating SL of \"", OrderTicket(), "\" as \"", OrderStopLoss(), "\" -> \"", trailStop, "\"");
+                Print("Updating SL of \"", OrderTicket(), "\" as \"", OrderStopLoss(), "\" -> \"", trailStop, "\" and MA is ", (isMAActive ? "active ": "not active"));
                 
                 /* Update trail stop. */
                 if (!OrderModify(OrderTicket(), OrderOpenPrice(), trailStop, OrderTakeProfit(), 0, Green))
@@ -214,10 +217,11 @@ void OnTick()
         else if (OrderType() == OP_SELL)
         {
             /* If Ask price is less than the MA21. */
-            if (Ask < MA21_CALC(BASE_INTERVAL, 0))
+            if ((Ask + ((STRICT_SL_MA == true) ? 0 : (TRAIL_STOP * Point))) < MA21_CALC(BASE_INTERVAL, 0))
             {
                 /* Calculate trail stop from the MA21. */
                 trailStop = MA21_CALC(BASE_INTERVAL, 0) + (Ask - Bid);
+                isMAActive = true;
             }
             else
             {
@@ -231,7 +235,7 @@ void OnTick()
             /* If stop loss can be updated. */
             if ((OrderStopLoss() > trailStop) || (OrderStopLoss() == 0))
             {
-                Print("Updating SL of \"", OrderTicket(), "\" as \"", OrderStopLoss(), "\" -> \"", trailStop, "\"");
+                Print("Updating SL of \"", OrderTicket(), "\" as \"", OrderStopLoss(), "\" -> \"", trailStop, "\" and MA is ", (isMAActive ? "active ": "not active"));
                 
                 /* Update trail stop. */
                 if (!OrderModify(OrderTicket(), OrderOpenPrice(), trailStop, OrderTakeProfit(), 0, Red))
