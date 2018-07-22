@@ -12,7 +12,6 @@
 #define NUM_INTERVALS                   9
 #define MAGIC                           0x145211
 
-int     testOrderOpened                 = false;
 
 /* Interval definitions. */
 int intervals[NUM_INTERVALS] =
@@ -77,7 +76,7 @@ input ENUM_MA_METHOD        MA_METHOD           = MODE_EMA;
 input ENUM_APPLIED_PRICE    MA_PRICE            = PRICE_CLOSE;
 
 /* Test definitions. */
-input datetime             DO_BUY               = 1532068200;
+input datetime             DO_BUY               = 0;//1532068200;
 input datetime             DO_SELL              = 0;
 input double               TEST_LOT_SIZE        = 0.01;
 
@@ -106,6 +105,7 @@ input double               TEST_LOT_SIZE        = 0.01;
 double bb[];
 double st[];
 string comment;
+int testOrderOpened = false;
 
 /**
  * This will be called on EA initialization.
