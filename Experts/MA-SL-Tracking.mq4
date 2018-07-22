@@ -12,11 +12,6 @@
 #define NUM_INTERVALS                   9
 #define MAGIC                           0x145211
 
-/* Test definitions. */
-#define DO_BUY                          0//StrToTime("2018.07.20 07:00")
-#define DO_SELL                         0//StrToTime("2018.07.18 11:00")
-#define TEST_LOT_SIZE                   0.01
-
 int     testOrderOpened                 = false;
 
 /* Interval definitions. */
@@ -63,7 +58,6 @@ string intervalStrings[NUM_INTERVALS] =
 /* Input configurations. */
 input double                TRAIL_STOP          = 250;
 input INTERVAL_INDEX        BASE_INTERVAL       = M30;
-input bool                  STRICT_SL_MA        = false;
 
 /* BB configurations. */
 input int                   BB_PERIOD           = 20;
@@ -81,6 +75,11 @@ input int                   ST_APPLIED_PRICE    = 1;
 
 input ENUM_MA_METHOD        MA_METHOD           = MODE_EMA;
 input ENUM_APPLIED_PRICE    MA_PRICE            = PRICE_CLOSE;
+
+/* Test definitions. */
+input datetime             DO_BUY               = 1532068200;
+input datetime             DO_SELL              = 0;
+input double               TEST_LOT_SIZE        = 0.01;
 
 /* Bollinger band definitions. */
 #define BB_VALUES                       3
@@ -115,10 +114,10 @@ int OnInit()
 {
     /* Initialize indicators. */
     initializeIndicators();
-    
+
     /* Initialize comment. */
     comment = "";
-    
+
     /* Read indicator values. */
     readIndicators();
     printIndicators();
@@ -132,7 +131,7 @@ int OnInit()
 }
 
 /**
- * This will be called on EA de initialization.
+ * This will be called on EA deinitialization.
  */
 void OnDeinit(const int reason)
 {
@@ -146,36 +145,36 @@ void OnTick()
 {
     int total;
     double trailStop;
-    int isMAActive = false;
-    
+    int isMAActive;
+
     /* Verify that we have enough data on the chart. */
     if (Bars < 100)
     {
         Print("bars less than 100");
         return;
     }
-    
+
     /* Initialize comment. */
     comment = "";
 
     /* Read indicator values. */
     readIndicators();
     printIndicators();
-    
+
     /* Calculate the total number of opened orders. */
     total = OrdersTotal();
-    
+
     if (testOrderOpened == false)
     {
         /* Open test orders if needed. */
         doTest(total);
     }
-    
+
     /* Traverse through all the orders. */
     for (int cnt = 0; cnt < total; cnt++)
     {
         /* Select the first order and verify if is the the right symbol and type. */
-        if (!OrderSelect(cnt, SELECT_BY_POS, MODE_TRADES) || 
+        if (!OrderSelect(cnt, SELECT_BY_POS, MODE_TRADES) ||
             (OrderSymbol() != Symbol()) ||
             ((OrderType() != OP_SELL) && (OrderType() != OP_BUY)))
         {
@@ -183,12 +182,15 @@ void OnTick()
             continue;
         }
 
+        /* Clear MA flag. */
+        isMAActive = false;
+
         /* If this is a long position. */
         if (OrderType() == OP_BUY)
         {
-            
-            /* If Bid price is greater than the MA21. */
-            if ((Bid - ((STRICT_SL_MA == true) ? 0 : (TRAIL_STOP * Point))) > MA21_CALC(BASE_INTERVAL, 0))
+
+            /* If M7 has crossed the M21. */
+            if (MA7_CALC(BASE_INTERVAL, 1) > MA21_CALC(BASE_INTERVAL, 1))
             {
                 /* Calculate trail stop from the MA21. */
                 trailStop = MA21_CALC(BASE_INTERVAL, 0);
@@ -200,11 +202,14 @@ void OnTick()
                 trailStop = Bid - (TRAIL_STOP * Point);
             }
 
+            /* Normalize the trail stop. */
+            trailStop = NormalizeDouble(trailStop, Digits);
+
             /* If stop loss can be updated. */
             if ((OrderStopLoss() < trailStop) || (OrderStopLoss() == 0))
             {
                 Print("Updating SL of \"", OrderTicket(), "\" as \"", OrderStopLoss(), "\" -> \"", trailStop, "\" and MA is ", (isMAActive ? "active ": "not active"));
-                
+
                 /* Update trail stop. */
                 if (!OrderModify(OrderTicket(), OrderOpenPrice(), trailStop, OrderTakeProfit(), 0, Green))
                 {
@@ -212,12 +217,12 @@ void OnTick()
                 }
             }
         }
-        
+
         /* If this is a short position. */
         else if (OrderType() == OP_SELL)
         {
-            /* If Ask price is less than the MA21. */
-            if ((Ask + ((STRICT_SL_MA == true) ? 0 : (TRAIL_STOP * Point))) < MA21_CALC(BASE_INTERVAL, 0))
+            /* If M7 has crossed the M21. */
+            if (MA7_CALC(BASE_INTERVAL, 1) < MA21_CALC(BASE_INTERVAL, 1))
             {
                 /* Calculate trail stop from the MA21. */
                 trailStop = MA21_CALC(BASE_INTERVAL, 0) + (Ask - Bid);
@@ -228,15 +233,15 @@ void OnTick()
                 /* Calculate trail stop from the Ask price. */
                 trailStop = Ask + (TRAIL_STOP * Point);
             }
-            
+
             /* Normalize the trail stop. */
             trailStop = NormalizeDouble(trailStop, Digits);
-            
+
             /* If stop loss can be updated. */
             if ((OrderStopLoss() > trailStop) || (OrderStopLoss() == 0))
             {
                 Print("Updating SL of \"", OrderTicket(), "\" as \"", OrderStopLoss(), "\" -> \"", trailStop, "\" and MA is ", (isMAActive ? "active ": "not active"));
-                
+
                 /* Update trail stop. */
                 if (!OrderModify(OrderTicket(), OrderOpenPrice(), trailStop, OrderTakeProfit(), 0, Red))
                 {
@@ -256,7 +261,7 @@ void OnTick()
 void doTest(int numOrders)
 {
     int ticket;
-    
+
     /* If we have not opened an order yet. */
     if (numOrders < 1)
     {
@@ -265,26 +270,26 @@ void doTest(int numOrders)
         {
             /* Open a buy order. */
             ticket = OrderSend(Symbol(), OP_BUY, TEST_LOT_SIZE, Ask, 3, 0, 0, "OPTIMAL_TEST", MAGIC, 0, Green);
-            
+
             if ((ticket > 0) && OrderSelect(ticket ,SELECT_BY_TICKET, MODE_TRADES))
             {
-                Print("SELL order opened : ", OrderOpenPrice());
+                Print("BUY order opened : ", OrderOpenPrice());
             }
             else
             {
                 Print("Error opening SELL order : ", GetLastError());
             }
-            
+
             /* Test order was opened. */
             testOrderOpened = true;
         }
-        
+
         /* Test if we need to open a sell order. */
         if ((DO_SELL > 0) && (TimeCurrent() >= DO_SELL))
         {
             /* Open a sell order. */
             ticket = OrderSend(Symbol(), OP_SELL, TEST_LOT_SIZE, Bid, 3, 0, 0, "OPTIMAL_TEST", MAGIC, 0, Red);
-            
+
             if ((ticket > 0) && OrderSelect(ticket, SELECT_BY_TICKET, MODE_TRADES))
             {
                 Print("SELL order opened : ", OrderOpenPrice());
@@ -293,7 +298,7 @@ void doTest(int numOrders)
             {
                 Print("Error opening SELL order : ", GetLastError());
             }
-            
+
             /* Test order was opened. */
             testOrderOpened = true;
         }
@@ -349,7 +354,7 @@ void printIndicators()
 
         /* Add stochastic data. */
         comment += ((ST_DIR(i) == 1) ? "U" : "D");
-        
+
         /* Terminate this line. */
         comment += "\n";
     }
