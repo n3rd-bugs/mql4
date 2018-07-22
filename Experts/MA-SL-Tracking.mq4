@@ -13,14 +13,14 @@
 #define MAGIC                           0x145211
 
 /* Test definitions. */
-#define DO_BUY                          StrToTime("2018.07.20 07:00")
+#define DO_BUY                          0//StrToTime("2018.07.20 07:00")
 #define DO_SELL                         0//StrToTime("2018.07.18 11:00")
 #define TEST_LOT_SIZE                   0.01
 
 int     testOrderOpened                 = false;
 
 /* Interval definitions. */
-int inervals[NUM_INTERVALS] =
+int intervals[NUM_INTERVALS] =
 {
     PERIOD_M1,
     PERIOD_M5,
@@ -47,7 +47,7 @@ enum INTERVAL_INDEX
 };
 
 /* Interval string definitions. */
-string inervalStrings[NUM_INTERVALS] =
+string intervalStrings[NUM_INTERVALS] =
 {
     "1min",
     "5min",
@@ -87,21 +87,21 @@ input ENUM_APPLIED_PRICE    MA_PRICE            = PRICE_CLOSE;
 #define BB_UPPER(intv)                  (bb[(intv * BB_VALUES)])
 #define BB_MAIN(intv)                   (bb[(intv * BB_VALUES) + 1])
 #define BB_LOWER(intv)                  (bb[(intv * BB_VALUES) + 2])
-#define BB_UPPER_CALC(intv, shift)      (iBands(NULL, inervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, BB_APPLIED_PRICE, MODE_UPPER, shift))
-#define BB_MAIN_CALC(intv, shift)       (iBands(NULL, inervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, BB_APPLIED_PRICE, MODE_MAIN, shift))
-#define BB_LOWER_CALC(intv, shift)      (iBands(NULL, inervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, BB_APPLIED_PRICE, MODE_LOWER, shift))
+#define BB_UPPER_CALC(intv, shift)      (iBands(NULL, intervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, BB_APPLIED_PRICE, MODE_UPPER, shift))
+#define BB_MAIN_CALC(intv, shift)       (iBands(NULL, intervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, BB_APPLIED_PRICE, MODE_MAIN, shift))
+#define BB_LOWER_CALC(intv, shift)      (iBands(NULL, intervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, BB_APPLIED_PRICE, MODE_LOWER, shift))
 
 /* Stochastic definitions. */
 #define ST_VALUES                       3
 #define ST_MAIN(intv)                   (st[(intv * ST_VALUES)])
 #define ST_SIGNAL(intv)                 (st[(intv * ST_VALUES) + 1])
 #define ST_DIR(intv)                    (st[(intv * ST_VALUES) + 2])
-#define ST_MAIN_CALC(intv, shift)       (iStochastic(NULL, inervals[intv], ST_K, ST_D, ST_S, ST_METHOD, ST_APPLIED_PRICE, MODE_MAIN, shift))
-#define ST_SIGNAL_CALC(intv, shift)     (iStochastic(NULL, inervals[intv], ST_K, ST_D, ST_S, ST_METHOD, ST_APPLIED_PRICE, MODE_SIGNAL, shift))
+#define ST_MAIN_CALC(intv, shift)       (iStochastic(NULL, intervals[intv], ST_K, ST_D, ST_S, ST_METHOD, ST_APPLIED_PRICE, MODE_MAIN, shift))
+#define ST_SIGNAL_CALC(intv, shift)     (iStochastic(NULL, intervals[intv], ST_K, ST_D, ST_S, ST_METHOD, ST_APPLIED_PRICE, MODE_SIGNAL, shift))
 
 /* MA definitions. */
-#define MA21_CALC(intv, shift)          (iMA(NULL, inervals[intv], 21, 0, MA_METHOD, MA_PRICE, shift))
-#define MA7_CALC(intv, shift)           (iMA(NULL, inervals[intv], 7, 0, MA_METHOD, MA_PRICE, shift))
+#define MA21_CALC(intv, shift)          (iMA(NULL, intervals[intv], 21, 0, MA_METHOD, MA_PRICE, shift))
+#define MA7_CALC(intv, shift)           (iMA(NULL, intervals[intv], 7, 0, MA_METHOD, MA_PRICE, shift))
 
 /* Shared/global variable definitions. */
 double bb[];
@@ -148,7 +148,7 @@ void OnTick()
     double trailStop;
     int isMAActive = false;
     
-    /* Verify that we have enoght data on the chart. */
+    /* Verify that we have enough data on the chart. */
     if (Bars < 100)
     {
         Print("bars less than 100");
@@ -251,7 +251,7 @@ void OnTick()
 }
 
 /**
- * This retrun true if conditions match for a long position to close.
+ * This return true if conditions match for a long position to close.
  */
 void doTest(int numOrders)
 {
@@ -339,7 +339,7 @@ void printIndicators()
     for (int i = 0; (i < NUM_INTERVALS); i++)
     {
         /* Add interval string. */
-        comment += "[" + inervalStrings[i] + "] ";
+        comment += "[" + intervalStrings[i] + "] ";
 
         /* Add Bollinger for this interval. */
         comment += ((Close[0] > BB_UPPER(i)) ? "*" : " ") + DoubleToStr(BB_UPPER(i), 2);
