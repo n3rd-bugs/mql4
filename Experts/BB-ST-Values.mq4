@@ -67,10 +67,11 @@ input ENUM_MA_METHOD        ST_METHOD           = MODE_SMA;
 input int                   ST_APPLIED_PRICE    = 1;
 
 /* Bollinger band definitions. */
-#define BB_VALUES                       3
+#define BB_VALUES                       4
 #define BB_UPPER(intv)                  (bb[(intv * BB_VALUES)])
 #define BB_MAIN(intv)                   (bb[(intv * BB_VALUES) + 1])
 #define BB_LOWER(intv)                  (bb[(intv * BB_VALUES) + 2])
+#define BB_DIR(intv)                    (bb[(intv * BB_VALUES) + 3])
 #define BB_UPPER_CALC(intv, shift)      (iBands(NULL, intervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, BB_APPLIED_PRICE, MODE_UPPER, shift))
 #define BB_MAIN_CALC(intv, shift)       (iBands(NULL, intervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, BB_APPLIED_PRICE, MODE_MAIN, shift))
 #define BB_LOWER_CALC(intv, shift)      (iBands(NULL, intervals[intv], BB_PERIOD, BB_DEVIATION, BB_SHIFT, BB_APPLIED_PRICE, MODE_LOWER, shift))
@@ -164,6 +165,7 @@ void readIndicators()
         BB_UPPER(i)     = BB_UPPER_CALC(i, 0);
         BB_MAIN(i)      = BB_MAIN_CALC(i, 0);
         BB_LOWER(i)     = BB_LOWER_CALC(i, 0);
+        BB_DIR(i)       = (BB_UPPER_CALC(i, 0) - BB_LOWER_CALC(i, 0)) - (BB_UPPER_CALC(i, 1) - BB_LOWER_CALC(i, 1));
 
         /* Gather stochastic data. */
         ST_MAIN(i)      = ST_MAIN_CALC(i, 0);
@@ -190,6 +192,7 @@ void printIndicators()
         comment += "[" + intervalStrings[i] + "] ";
 
         /* Add Bollinger for this interval. */
+        comment += (BB_DIR(i) == 0) ? " S " : ((BB_DIR(i) > 0) ? " E " : " C ");
         comment += ((Close[0] > BB_UPPER(i)) ? "*" : " ") + DoubleToStr(BB_UPPER(i), Digits);
         comment += (((Close[0] <= BB_UPPER(i)) && (Close[0] > BB_MAIN(i))) ? " * " : "   ") + DoubleToStr(BB_MAIN(i), Digits);
         comment += (((Close[0] <= BB_MAIN(i)) && (Close[0] > BB_LOWER(i))) ? " * " : "   ") + DoubleToStr(BB_LOWER(i), Digits);
